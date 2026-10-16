@@ -1,0 +1,124 @@
+# Локальный Lakehouse: MinIO + PostgreSQL + Lakekeeper (Iceberg REST) + Trino
+# Запуск: docker compose up -d
+name: lakehouse
+
+services:
+  # --- Объектное хранилище: сюда физически ложатся parquet-файлы ---
+  # Официальные образы MinIO с конца 2025 не публикуются (Quay отвечает 401),
+  # поэтому используется S3-совместимый форк Silo (pgsty/minio).
+  minio:
+    image: pgsty/minio:RELEASE.2026-08-04T00-00-00Z
+    container_name: lakehouse-minio
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: minio
+      MINIO_ROOT_PASSWORD: minio12345
+    ports:
+      - "9000:9000"   # S3 API
+      - "9001:9001"   # веб-консоль
+    volumes:
+      - minio-data:/data
+
+  # Одноразовый контейнер: ждёт готовности MinIO и создаёт бакет lakehouse
+  minio-init:
+    image: pgsty/mc:RELEASE.2026-09-16T00-00-00Z
+    container_name: lakehouse-minio-init
+    restart: "no"
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        until mc alias set local http://minio:9000 minio minio12345; do sleep 2; done
+        mc mb --ignore-existing local/lakehouse
+    depends_on:
+      - minio
+
+  # --- PostgreSQL: здесь Lakekeeper хранит метаданные каталога ---
+  postgres:
+    image: postgres:16-alpine
+    container_name: lakehouse-pg
+    environment:
+      POSTGRES_USER: lakekeeper
+      POSTGRES_PASSWORD: lakekeeper
+      POSTGRES_DB: lakekeeper
+    volumes:
+      - pg-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U lakekeeper -d lakekeeper"]
+      interval: 2s
+      timeout: 5s
+      retries: 30
+
+  # --- Lakekeeper: Iceberg REST Catalog ---
+  # Шаг 1: миграции схемы БД каталога (отрабатывает и завершается)
+  lakekeeper-migrate:
+    image: &lakekeeper_image quay.io/lakekeeper/catalog:latest
+    container_name: lakekeeper-migrate
+    restart: "no"
+    environment: &lakekeeper_env
+      LAKEKEEPER__PG_ENCRYPTION_KEY: "local-demo-key-NOT-secure"
+      LAKEKEEPER__PG_DATABASE_URL_READ: postgresql://lakekeeper:lakekeeper@postgres:5432/lakekeeper
+      LAKEKEEPER__PG_DATABASE_URL_WRITE: postgresql://lakekeeper:lakekeeper@postgres:5432/lakekeeper
+    command: ["migrate"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  # Шаг 2: сам сервер каталога
+  lakekeeper:
+    image: *lakekeeper_image
+    container_name: lakekeeper
+    environment: *lakekeeper_env
+    command: ["serve"]
+    ports:
+      - "8181:8181"   # REST API + UI (http://localhost:8181/ui)
+    healthcheck:
+      test: ["CMD", "/home/nonroot/lakekeeper", "healthcheck"]
+      interval: 2s
+      timeout: 10s
+      retries: 30
+      start_period: 5s
+    depends_on:
+      lakekeeper-migrate:
+        condition: service_completed_successfully
+      minio-init:
+        condition: service_completed_successfully
+
+  # Шаг 3: bootstrap каталога + создание warehouse поверх бакета MinIO
+  lakekeeper-init:
+    image: curlimages/curl:8.11.1
+    container_name: lakekeeper-init
+    restart: "no"
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        echo "bootstrap:"
+        curl -s -X POST http://lakekeeper:8181/management/v1/bootstrap \
+          -H 'Content-Type: application/json' -d '{"accept-terms-of-use": true}'
+        echo; echo "warehouse:"
+        curl -s -X POST http://lakekeeper:8181/management/v1/warehouse \
+          -H 'Content-Type: application/json' -d @/init/create-warehouse.json
+        echo
+    volumes:
+      - ./lakekeeper:/init:ro
+    depends_on:
+      lakekeeper:
+        condition: service_healthy
+      minio-init:
+        condition: service_completed_successfully
+
+  # --- Trino: SQL-движок (метаданные из Lakekeeper, данные из MinIO) ---
+  trino:
+    image: trinodb/trino:476
+    container_name: trino
+    ports:
+      - "8080:8080"   # веб-UI Trino
+    volumes:
+      - ./trino/catalog:/etc/trino/catalog:ro
+      - ./sql:/sql:ro
+    depends_on:
+      lakekeeper-init:
+        condition: service_completed_successfully
+
+volumes:
+  minio-data:
+  pg-data:

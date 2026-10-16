@@ -1,0 +1,92 @@
+"partitioned by year","4","21.3"
+"no partitions","1","20.6"
+"Trino version: 476
+Queued: 209.17us, Analysis: 16.00ms, Planning: 34.40ms, Execution: 211.60ms
+Fragment 1 [HASH]
+    CPU: 17.90ms, Scheduled: 26.20ms, Blocked 806.44ms (Input: 380.14ms, Output: 0.00ns), Input: 37967 rows (667.39kB); per task: avg.: 37967.00 std.dev.: 0.00, Output: 37967 rows (667.39kB)
+    Peak Memory: 701.04kB, Tasks count: 1; per task: max: 701.04kB
+    Output layout: [custkey, sum]
+    Output partitioning: SINGLE []
+    Aggregate[type = FINAL, keys = [custkey]]
+    │   Layout: [custkey:bigint, sum:double]
+    │   Estimates: {rows: 99032 (1.70MB), cpu: 1.95M, memory: 1.70MB, network: 0B}
+    │   CPU: 15.00ms (33.33%), Scheduled: 21.00ms (34.43%), Blocked: 0.00ns (0.00%), Output: 37967 rows (667.39kB)
+    │   Input avg.: 4745.88 rows, Input std.dev.: 1.30%
+    │   sum := sum(sum_0)
+    └─ LocalExchange[partitioning = HASH, arguments = [custkey::bigint]]
+       │   Layout: [custkey:bigint, sum_0:double]
+       │   Estimates: {rows: 113535 (1.95MB), cpu: 1.95M, memory: 0B, network: 0B}
+       │   CPU: 1.00ms (2.22%), Scheduled: 4.00ms (6.56%), Blocked: 315.00ms (45.32%), Output: 37967 rows (667.39kB)
+       │   Input avg.: 4745.88 rows, Input std.dev.: 264.58%
+       └─ RemoteSource[sourceFragmentIds = [2]]
+              Layout: [custkey:bigint, sum_0:double]
+              CPU: 0.00ns (0.00%), Scheduled: 0.00ns (0.00%), Blocked: 380.00ms (54.68%), Output: 37967 rows (667.39kB)
+              Input avg.: 4745.88 rows, Input std.dev.: 264.58%
+
+Fragment 2 [SOURCE]
+    CPU: 29.37ms, Scheduled: 36.07ms, Blocked 0.00ns (Input: 0.00ns, Output: 0.00ns), Input: 454138 rows (11.69MB); per task: avg.: 454138.00 std.dev.: 0.00, Output: 37967 rows (667.39kB)
+    Peak Memory: 800.93kB, Tasks count: 1; per task: max: 800.93kB
+    Output layout: [custkey, sum_0]
+    Output partitioning: HASH [custkey]
+    Aggregate[type = PARTIAL, keys = [custkey]]
+    │   Layout: [custkey:bigint, sum_0:double]
+    │   Estimates: {rows: 113535 (1.95MB), cpu: ?, memory: ?, network: ?}
+    │   CPU: 10.00ms (22.22%), Scheduled: 10.00ms (16.39%), Blocked: 0.00ns (0.00%), Output: 37967 rows (667.39kB)
+    │   Input avg.: 114705.00 rows, Input std.dev.: 0.00%
+    │   sum_0 := sum(net_revenue)
+    └─ ScanFilterProject[table = lakehouse:silver.returned_lines$data@977280775822179068, filterPredicate = ((orderdate >= date '1993-10-01') AND (orderdate < date '1994-01-01'))]
+           Layout: [custkey:bigint, net_revenue:double]
+           Estimates: {rows: 454138 (7.80MB), cpu: 9.96M, memory: 0B, network: 0B}/{rows: 113535 (1.95MB), cpu: 9.96M, memory: 0B, network: 0B}/{rows: 113535 (1.95MB), cpu: 1.95M, memory: 0B, network: 0B}
+           CPU: 19.00ms (42.22%), Scheduled: 26.00ms (42.62%), Blocked: 0.00ns (0.00%), Output: 114705 rows (1.97MB)
+           Input avg.: 454138.00 rows, Input std.dev.: 0.00%
+           net_revenue := 7:net_revenue:double
+           custkey := 3:custkey:bigint
+           orderdate := 4:orderdate:date
+           Input: 454138 rows (11.69MB), Filtered: 74.74%, Physical input: 3.73MB, Physical input time: 327.79us, Splits: 1, Splits generation wait time: 9.49ms
+
+"
+"Trino version: 476
+Queued: 179.21us, Analysis: 8.64ms, Planning: 20.03ms, Execution: 249.28ms
+Fragment 1 [HASH]
+    CPU: 12.97ms, Scheduled: 13.34ms, Blocked 1.65s (Input: 812.38ms, Output: 0.00ns), Input: 37967 rows (667.39kB); per task: avg.: 37967.00 std.dev.: 0.00, Output: 37967 rows (667.39kB)
+    Peak Memory: 801.41kB, Tasks count: 1; per task: max: 801.41kB
+    Output layout: [custkey, sum]
+    Output partitioning: SINGLE []
+    Aggregate[type = FINAL, keys = [custkey]]
+    │   Layout: [custkey:bigint, sum:double]
+    │   Estimates: {rows: 99032 (1.70MB), cpu: 1.85M, memory: 1.70MB, network: 0B}
+    │   CPU: 11.00ms (14.67%), Scheduled: 11.00ms (11.83%), Blocked: 0.00ns (0.00%), Output: 37967 rows (667.39kB)
+    │   Input avg.: 4745.88 rows, Input std.dev.: 1.30%
+    │   sum := sum(sum_0)
+    └─ LocalExchange[partitioning = HASH, arguments = [custkey::bigint]]
+       │   Layout: [custkey:bigint, sum_0:double]
+       │   Estimates: {rows: 107981 (1.85MB), cpu: 1.85M, memory: 0B, network: 0B}
+       │   CPU: 1.00ms (1.33%), Scheduled: 1.00ms (1.08%), Blocked: 834.00ms (50.67%), Output: 37967 rows (667.39kB)
+       │   Input avg.: 4745.88 rows, Input std.dev.: 264.58%
+       └─ RemoteSource[sourceFragmentIds = [2]]
+              Layout: [custkey:bigint, sum_0:double]
+              CPU: 0.00ns (0.00%), Scheduled: 0.00ns (0.00%), Blocked: 812.00ms (49.33%), Output: 37967 rows (667.39kB)
+              Input avg.: 4745.88 rows, Input std.dev.: 264.58%
+
+Fragment 2 [SOURCE]
+    CPU: 63.63ms, Scheduled: 81.40ms, Blocked 0.00ns (Input: 0.00ns, Output: 0.00ns), Input: 1478870 rows (24.51MB); per task: avg.: 1478870.00 std.dev.: 0.00, Output: 37967 rows (667.39kB)
+    Peak Memory: 800.93kB, Tasks count: 1; per task: max: 15.13MB
+    Output layout: [custkey, sum_0]
+    Output partitioning: HASH [custkey]
+    Aggregate[type = PARTIAL, keys = [custkey]]
+    │   Layout: [custkey:bigint, sum_0:double]
+    │   Estimates: {rows: 107981 (1.85MB), cpu: ?, memory: ?, network: ?}
+    │   CPU: 9.00ms (12.00%), Scheduled: 9.00ms (9.68%), Blocked: 0.00ns (0.00%), Output: 37967 rows (667.39kB)
+    │   Input avg.: 114705.00 rows, Input std.dev.: 0.00%
+    │   sum_0 := sum(net_revenue)
+    └─ ScanFilterProject[table = lakehouse:silver.returned_lines_nopart$data@6061847153028381646, filterPredicate = ((orderdate >= date '1993-10-01') AND (orderdate < date '1994-01-01'))]
+           Layout: [custkey:bigint, net_revenue:double]
+           Estimates: {rows: 1478870 (25.39MB), cpu: 32.44M, memory: 0B, network: 0B}/{rows: 107981 (1.85MB), cpu: 32.44M, memory: 0B, network: 0B}/{rows: 107981 (1.85MB), cpu: 1.85M, memory: 0B, network: 0B}
+           CPU: 54.00ms (72.00%), Scheduled: 72.00ms (77.42%), Blocked: 0.00ns (0.00%), Output: 114705 rows (1.97MB)
+           Input avg.: 1478870.00 rows, Input std.dev.: 0.00%
+           net_revenue := 7:net_revenue:double
+           custkey := 3:custkey:bigint
+           orderdate := 4:orderdate:date
+           Input: 1478870 rows (24.51MB), Filtered: 92.24%, Physical input: 12.28MB, Physical input time: 20.98ms, Splits: 1, Splits generation wait time: 8.88ms
+
+"
