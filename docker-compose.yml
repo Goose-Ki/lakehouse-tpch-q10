@@ -119,6 +119,29 @@ services:
       lakekeeper-init:
         condition: service_completed_successfully
 
+  # --- BI: Superset поверх Trino (запускается отдельно: docker compose --profile bi up -d --build) ---
+  superset:
+    profiles: ["bi"]
+    build: ./superset
+    container_name: superset
+    environment:
+      SUPERSET_SECRET_KEY: "local-demo-secret-NOT-secure-0123456789abcdef"
+    ports:
+      - "8088:8088"
+    volumes:
+      - superset-data:/app/superset_home
+    command:
+      - /bin/sh
+      - -c
+      - |
+        superset db upgrade &&
+        (superset fab create-admin --username admin --firstname Admin --lastname Local --email admin@example.com --password admin || true) &&
+        superset init &&
+        gunicorn -w 2 -k gthread --threads 4 --timeout 120 -b 0.0.0.0:8088 "superset.app:create_app()"
+    depends_on:
+      - trino
+
 volumes:
   minio-data:
   pg-data:
+  superset-data:

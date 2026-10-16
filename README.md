@@ -16,6 +16,8 @@ sql/03_gold.sql                 top20_returned_customers — ответ на Q10
 sql/04_check.sql                сверка Gold с эталоном + строки/вес таблиц + партиции
 sql/05_evolution_timetravel.sql часть 2: schema evolution и восстановление из снапшота
 sql/06_partition_compare.sql    замер: Silver с партициями по году vs без партиций
+superset/Dockerfile             Superset + драйвер trino (п. 6.2)
+отчет.md                        отчёт по форме преподавателя
 bench.sh                        бенчмарк Parquet (GZIP/ZSTD/SNAPPY/NONE) и ORC (GZIP/ZSTD)
 results/                        сюда bench.sh пишет таблицу результатов
 ```
@@ -69,6 +71,13 @@ results/                        сюда bench.sh пишет таблицу ре
    docker exec -it trino trino --catalog lakehouse
    ```
 
+8. Superset (после бенчмарка, чтобы не мешал замерам):
+   ```bash
+   docker compose --profile bi up -d --build superset
+   ```
+   http://localhost:8088, admin / admin → Database Connections → Trino,
+   URI `trino://admin@trino:8080/lakehouse`.
+
 ## Веб-интерфейсы
 
 | Сервис | Адрес | Логин / пароль |
@@ -76,6 +85,7 @@ results/                        сюда bench.sh пишет таблицу ре
 | MinIO (Silo) Console | http://localhost:9001 | minio / minio12345 |
 | Lakekeeper UI | http://localhost:8181/ui | — |
 | Trino UI | http://localhost:8080 | любое имя, без пароля |
+| Superset | http://localhost:8088 | admin / admin |
 
 ## Остановка
 
